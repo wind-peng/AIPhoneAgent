@@ -26,7 +26,7 @@
 
 ### 安装
 
-1. 到本仓库的 **Actions** 里下载最新的 `PhoneAgent-tipa`（或等 Releases）。
+1. 直接下载本仓库里的 [PhoneAgent-v0.5.16.tipa](PhoneAgent-v0.5.16.tipa)（最新版也在 Actions 的 `PhoneAgent-tipa` 里）。
 2. 把 `.tipa` 文件传到 iPhone，用 TrollStore 打开安装。
 3. 打开 App，在设置里填好 **Key**、**接口地址**、**模型名**，点 **开始任务**，再打开屏幕录制广播（Broadcast）。
 4. 给它一句话任务就行。
@@ -76,7 +76,7 @@ Give it a task in plain words (typed or by voice), and it carries it out on the 
 
 ### Install
 
-1. Download the latest `PhoneAgent-tipa` artifact from this repo's **Actions** tab.
+1. Download [PhoneAgent-v0.5.16.tipa](PhoneAgent-v0.5.16.tipa) directly from this repo (the latest build is also in **Actions** as `PhoneAgent-tipa`).
 2. Send the `.tipa` to your iPhone and install it with TrollStore.
 3. Open the app, fill in your **Key**, **base URL** and **model** in Settings, tap **开始任务** (Start), and turn on the screen-recording broadcast.
 4. Give it a task.
