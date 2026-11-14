@@ -1,110 +1,96 @@
-# AIPhoneAgent
+# v0.9.1:提醒改为系统级弹窗(任何 App 上面都能看到)+ 修关闭确认后仍提醒,见《使用说明_v0.7.md》末尾
 
-**Let an AI model use your iPhone, from the iPhone itself.**
+# v0.9.0:暂停等用户处理、敏感操作确认与禁止 App、经验库,见《使用说明_v0.7.md》末尾
 
-一个 iPhone App，让大模型直接操作你手里的 iPhone：看截图、点屏幕、打字、打开 App。不用电脑、不用越狱、不用开发者账号，用 TrollStore 安装就能跑。
+# v0.8.3:开始直播后点“面板下面空白区域的中心”收起面板,并加透明保护层,见《使用说明_v0.7.md》末尾
 
-[中文](#中文) | [English](#english)
+# v0.8.2:快捷指令也能自动开录屏、开始直播后自动收起面板、结果语音朗读(可开关),见《使用说明_v0.7.md》末尾
 
----
+# v0.8.1:按截图校准“开始直播”和“好”的点击位置、结束顺序调整、粘贴判断放宽、模型列表可添加/删除,见《使用说明_v0.7.md》末尾
 
-## 中文
+# v0.8.0:键盘快捷键粘贴 + 自动开关录屏,见《使用说明_v0.7.md》末尾
 
-### 能干什么
+# v0.7.0:见《使用说明_v0.7.md》
+新增:模型选择菜单(DeepSeek / 智谱 GLM-5.3 / AutoGLM-Phone / 自定义,各自保存 API)、语音输入与附件、请求最多重试 5 次、
+任务结果窗口、找不到 App 时去 App 资源库搜索、记忆(手动+自动)、任务期间防锁屏并在结束后回到软件、精简界面。
 
-- 你说一句话（语音或打字），它就去手机上帮你办：打开淘宝搜东西、打开设置改开关、查东西……
-- 每一步都是：截屏 → 发给大模型看 → 模型说点哪 → App 执行 → 再截屏，循环到做完。
-- 付款、输密码、下单、发送这类步骤会自动停住，等你自己手动处理。
+# v0.4.4 修改说明:找不到 App 时不再靠滑动、新增 home 动作、滑动模式测试
 
-### 需要什么
+你贴的日志里,open_app 没找到「高德地图」,模型就想用上滑回主屏再翻页去找,
+而上滑和左右翻页在本设备上都没生效,于是一直重复。这版:
+1. open_app:先按名称模糊匹配,再按常见 App 别名(高德、微信、淘宝……,只有确实装了才命中)匹配;
+   还是找不到时,会把已安装的第三方 App 名字列表(最多 60 个)回给模型,并要求它换准确名称或 stop,不要滑动去找。
+2. 新增 home 动作和按钮"3 秒后 回主屏(Home键)":先发 HID 的 Home 键事件(消费者页 Menu 键),
+   能查到最前台 App 时会确认是否回到主屏,没回去再试底部上滑。
+3. swipe 动作支持只给 direction(up/down/left/right),缺坐标时用默认位置,不会再出现 swipe (0,0)。
+4. 滑动不生效的排查:新增按钮"切换滑动模式(0~4)",每按一次换一种事件写法并保存:
+   0 基础(原来的);1 加触点半径;2 加触点半径且移动事件带 Touch;3 加触点半径、慢速并在起止停顿;
+   4 = 3 再加移动事件带 Range|Touch。
+   测试方法:打开"设置"之类可滚动页面前,先在 PhoneAgent 里切到某个模式,点"3 秒后上滑一次",
+   切到设置等 3 秒,看是否滚动。找到能用的模式后保持即可(会保存)。
 
-| 东西 | 说明 |
-| --- | --- |
-| iPhone | 能装 TrollStore 的系统（iOS 14.0–16.6.1、17.0），比如 iPhone 13 / iOS 16.1 |
-| TrollStore | 用来安装这个 App（.tipa） |
-| 大模型 Key | 在 App 设置里填自己的 Key。默认 DeepSeek（`https://api.deepseek.com`），也支持任何 OpenAI 兼容、能看图的接口，比如智谱 GLM-4V |
+# v0.4.3 修改说明:修正"点击位置总是错"
 
-### 安装
+可能的原因和对应修改:
+1. 坐标单位对不上:旧版让模型输出屏幕 pt 坐标(390x844),但发给它的图是 1100 像素宽,
+   模型很容易按图片像素回答,程序再把超出范围的值硬压到屏幕边缘。
+   现在:截图固定缩放成 780x1688(正好是屏幕 pt 的 2 倍),叠加每 100 像素一条的红色网格和边缘数字,
+   提示词要求所有坐标都用这张图的像素坐标,程序再换算成 pt;超出图片范围的坐标会被拒绝并提示模型重来。
+2. 有文字的目标改用"编号":OCR 结果按从上到下排序并编号 [1][2]...,模型只要给 id,
+   程序直接点该文字的精确中心(OCR 的坐标比模型估计的准得多);只有没有文字的图标才让模型估计 x,y。
+3. 图片清晰度:detail 由 low 改为 original(low 会把图再缩小,小字和位置都变差)。
+4. 画面过期:广播扩展以前会因为限速丢掉"最后一帧",而屏幕静止后系统不会再推新帧,
+   结果主 App 拿到的可能是转场中途的旧画面。现在扩展只暂存最新一帧,由定时器每 0.3 秒补发;
+   每一步开始前还会等画面静止(0.8 秒内没有新帧)再截图。
+5. 日志里每一步会显示 id、文字和换算后的 pt 坐标,方便你对照屏幕检查。
 
-1. 直接下载本仓库里的 [PhoneAgent-v0.5.16.tipa](PhoneAgent-v0.5.16.tipa)（最新版也在 Actions 的 `PhoneAgent-tipa` 里）。
-2. 把 `.tipa` 文件传到 iPhone，用 TrollStore 打开安装。
-3. 打开 App，在设置里填好 **Key**、**接口地址**、**模型名**，点 **开始任务**，再打开屏幕录制广播（Broadcast）。
-4. 给它一句话任务就行。
+# v0.4.2 修改说明(基于你调试好的 v4.1 版本)
 
-### 语音控制
+问题:模型让 PhoneAgent 写剪贴板时,PhoneAgent 自己在后台。iOS 9 起不允许后台 App 访问剪贴板
+(读取返回空,写入也会被忽略),所以粘贴出来是空的或旧内容。
 
-不用打开 App 也能用：做一个快捷指令——听写文本 → URL 编码 → 打开 URL `phoneagent://task?token=你的口令&text=编码后的文本`。详细步骤见 [语音控制设置.md](语音控制设置.md)。口令在 App 的日志里看，6 位数字，只保存在你自己手机上。
+修改:
+1. 写剪贴板时,先用 open_app 把 PhoneAgent 切到前台,写入并读回校验(同时记录 changeCount),
+   再切回原来的 App(原来的 App 优先用 SpringBoardServices 查最前台 App,查不到就用最近一次 open_app 或模型给的 app 参数)。
+2. input_text 和 set_clipboard 合并成同一套流程;写入失败或回不去会明确提示模型/日志,不再悄悄循环。
+3. 新增按钮"3 秒后 测试写入剪贴板":点它后切到任意有输入框的 App,长按粘贴,应该出现"PhoneAgent剪贴板测试123"。
+4. 提示词里说明 input_text 会先切走再切回,并可带 app 参数。
 
-### 远程控制（可选）
+建议同时在系统里设置:设置 → 微信(或其他 App)→ 从其他 App 粘贴 → 允许,
+这样就不会再弹"允许粘贴"的确认框。
 
-App 本身只在手机上跑。如果你想在外面用微信发任务让它控制手机，需要自己搭一个中转站（一个很小的 Python 服务），中转站代码不在这个仓库里。App 里填好中转站地址和口令就能用。
+# PhoneAgent v0.4.1:绕开 IOSurface 的 OCR + 智能体循环
 
-### 自己编译
 
-推到 GitHub 就行，Actions 会自动编译出 `.tipa`（见 [.github/workflows/build.yml](.github/workflows/build.yml)，跑在 `macos-15-intel` 上，`bash ./build.sh`）。
+## v0.4.1 相比 v0.4.0
+上一版日志显示:Vision 识别时要先建一个 YUV(420f)的图像缓冲区,而这个进程创建不了 IOSurface,所以失败。
+本版做了三件事:
+1. 广播扩展现在把系统给的原始 NV12 画面数据一起发给主 App,主 App 用"不带 IOSurface 的缓冲区"直接交给 Vision,
+   省掉格式转换这一步。日志会写"[NV12路径]..."和"[图片路径]..."两种路径各自的结果。
+2. 扩展启动时会试一下自己能不能创建 IOSurface,连接成功的日志里会写"扩展内创建 IOSurface:成功/失败"。
+3. entitlements 里加了 com.apple.security.iokit-user-client-class(试着让 IOSurface 可用)。
+   装好后点"诊断 IOSurface",看 IOServiceOpen 是否变成成功。
 
-### 原理（简单说）
+## v0.4.0 的改动
+1. OCR 修复:后台时系统不允许用 GPU,现在强制只用 CPU,并在失败时自动换 3 种设置重试,
+   全部失败会把每次的原因写进日志。
+2. 新增"智能体循环":截屏 → OCR 得到文字和坐标 → 发给模型 → 模型返回一个动作 → 执行 → 重复(最多 25 步)。
+   动作:tap / long_press / swipe / open_app(按名称) / set_clipboard / wait / done / stop。
 
-- 看屏幕：用系统录屏扩展（ReplayKit Broadcast）抓图。
-- 动手：App 自己点屏幕、打字。
-- 脑子：不在手机里，在云端的大模型（DeepSeek 等），App 只负责传图和执行。
-- 所以 App 本身很小（几十 KB），重的活都在云端。
+## 使用
+1. 先开屏幕广播(App 里"屏幕广播"那行点右边图标 → 选 PhoneAgent → 开始直播)。
+2. 先点"3 秒后 截屏 + OCR",切到有文字的 App,确认日志显示"方法R"并列出识别的文字。
+3. 填 API Key、接口地址(默认 https://api.deepseek.com)、模型名(默认 deepseek-chat)、任务,点"开始任务"。
+   API Key 保存在手机本地(NSUserDefaults),不会写进代码。
+4. 随时可点"停止任务"。
 
-### 注意
+## 安全措施
+- 点击位置附近文字含"支付/结算/提交订单/立即购买/付款"等时,会拦截并停止。
+- 屏幕上出现"输入支付密码/确认付款"时立刻停止。
+- 提示词里也要求模型只做到"加入购物车"。
+- 这些是尽力而为的保护,不是万无一失,首次测试请盯着手机。
 
-- 只在你自己的手机、自己的账号上用。
-- 付款、密码、订单这类操作它会停住等你，不要让它自己去点。
-- 这个项目用到了 iOS 的私有能力和完整权限，只能通过 TrollStore 安装，不能上架 App Store。
-
----
-
-## English
-
-**Let an AI model use your iPhone, from the iPhone itself.**
-
-An iPhone app that lets a vision model operate your iPhone: it looks at screenshots, taps, types, and opens apps. No computer at run time, no jailbreak, no developer account — install the `.tipa` with TrollStore and go.
-
-### What it does
-
-Give it a task in plain words (typed or by voice), and it carries it out on the phone, one step at a time: screenshot → vision model → action (tap / swipe / type / open app) → screenshot again, until done. Payment, password, order and send steps stop and wait for you.
-
-### Requirements
-
-- An iPhone that can run TrollStore (iOS 14.0–16.6.1, 17.0), e.g. iPhone 13 / iOS 16.1.
-- TrollStore to install the `.tipa`.
-- Your own API key for a vision model, entered in the app's settings. DeepSeek (`https://api.deepseek.com`) by default; any OpenAI-compatible vision endpoint works (e.g. Zhipu GLM-4V).
-
-### Install
-
-1. Download [PhoneAgent-v0.5.16.tipa](PhoneAgent-v0.5.16.tipa) directly from this repo (the latest build is also in **Actions** as `PhoneAgent-tipa`).
-2. Send the `.tipa` to your iPhone and install it with TrollStore.
-3. Open the app, fill in your **Key**, **base URL** and **model** in Settings, tap **开始任务** (Start), and turn on the screen-recording broadcast.
-4. Give it a task.
-
-### Voice control
-
-Use it without opening the app: build a Shortcut — Dictate Text → URL Encode → Open URL `phoneagent://task?token=YOUR_TOKEN&text=ENCODED_TEXT`. Details in [语音控制设置.md](语音控制设置.md) (Chinese). The 6-digit token is shown in the app's log and stays on your phone.
-
-### Remote control (optional)
-
-The app runs on the phone only. To drive it from WeChat while away, you need your own tiny relay server (a small Python service, not in this repo). Fill in the relay address and token in Settings and it will poll for tasks.
-
-### Build it yourself
-
-Just push to GitHub — Actions builds the `.tipa` automatically (see [.github/workflows/build.yml](.github/workflows/build.yml), `macos-15-intel`, `bash ./build.sh`).
-
-### How it works
-
-- **Eyes:** a ReplayKit broadcast extension captures the screen.
-- **Hands:** the app taps and types on the phone itself.
-- **Brain:** not on the phone — a cloud vision model (DeepSeek, etc.). The app only passes screenshots and executes actions, which is why the whole app is only tens of KB.
-
-### Notes
-
-- Only automate devices and accounts you own.
-- It stops at payment / password / order steps — don't let it tap through those on its own.
-- Uses private iOS capabilities and full entitlements; install via TrollStore only, it cannot go on the App Store.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
+## 已知限制
+- 模型只"看到"文字,看不到没有文字的图标(比如只有图案的购物车按钮)。
+- 输入文字靠"剪贴板 + 长按 + 粘贴",iOS 16 可能弹"允许粘贴",模型需要点它。
+- 动作之后画面有约 1 秒延迟,程序里已经等待。
